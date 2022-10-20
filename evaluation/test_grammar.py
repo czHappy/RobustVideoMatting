@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 #创建元素都为0
 dpz = np.zeros((5,4),dtype=int)
 print(dpz.shape)
@@ -24,3 +25,10 @@ slice_arr[slice_arr > 127] = 1
 
 
 print(slice_arr)
+
+
+x = torch.range(1, 960).reshape(2,20,3,4,2)
+x = x.flatten(0, 1)
+print(x.shape)
+x = x.unflatten(0, (2, 20))
+print(x.shape)

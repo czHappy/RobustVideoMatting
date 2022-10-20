@@ -5,7 +5,7 @@ from torch.nn import functional as F
 from typing import Tuple, Optional
 
 class RecurrentDecoder(nn.Module):
-    def __init__(self, feature_channels, decoder_channels):
+    def __init__(self, feature_channels, decoder_channels): # [64, 256, 512, 256], [128, 64, 32, 16] for resnet50
         super().__init__()
         self.avgpool = AvgPool()
         self.decode4 = BottleneckBlock(feature_channels[3])
@@ -18,7 +18,7 @@ class RecurrentDecoder(nn.Module):
                 s0: Tensor, f1: Tensor, f2: Tensor, f3: Tensor, f4: Tensor,
                 r1: Optional[Tensor], r2: Optional[Tensor],
                 r3: Optional[Tensor], r4: Optional[Tensor]):
-        s1, s2, s3 = self.avgpool(s0)
+        s1, s2, s3 = self.avgpool(s0) # 说明三个avgpool都是根据src_sm来的
         x4, r4 = self.decode4(f4, r4)
         x3, r3 = self.decode3(x4, f3, s3, r3)
         x2, r2 = self.decode2(x3, f2, s2, r2)
@@ -54,14 +54,14 @@ class AvgPool(nn.Module):
             return self.forward_single_frame(s0)
 
 
-class BottleneckBlock(nn.Module):
+class BottleneckBlock(nn.Module): # 分一半给GRU 另外一半不动，和GRU的输出concat起来
     def __init__(self, channels):
         super().__init__()
         self.channels = channels
         self.gru = ConvGRU(channels // 2)
         
     def forward(self, x, r: Optional[Tensor]):
-        a, b = x.split(self.channels // 2, dim=-3)
+        a, b = x.split(self.channels // 2, dim=-3) # ncwh
         b, r = self.gru(b, r)
         x = torch.cat([a, b], dim=-3)
         return x, r
@@ -169,18 +169,18 @@ class ConvGRU(nn.Module):
         r, z = self.ih(torch.cat([x, h], dim=1)).split(self.channels, dim=1)
         c = self.hh(torch.cat([x, r * h], dim=1))
         h = (1 - z) * h + z * c
-        return h, h
+        return h, h 
     
     def forward_time_series(self, x, h):
         o = []
-        for xt in x.unbind(dim=1):
+        for xt in x.unbind(dim=1): # T这一维度分解 把连续帧传入GRU ht会不断更新的
             ot, h = self.forward_single_frame(xt, h)
             o.append(ot)
-        o = torch.stack(o, dim=1)
+        o = torch.stack(o, dim=1) #o是每帧产生的ht h是迭代的hidden
         return o, h
         
     def forward(self, x, h: Optional[Tensor]):
-        if h is None:
+        if h is None: # 如果不指定h_0初始化h_0为0
             h = torch.zeros((x.size(0), x.size(-3), x.size(-2), x.size(-1)),
                             device=x.device, dtype=x.dtype)
         
@@ -189,7 +189,7 @@ class ConvGRU(nn.Module):
         else:
             return self.forward_single_frame(x, h)
 
-
+# 用1x1卷积将维度投影 in_channels->out_channels
 class Projection(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
@@ -199,11 +199,11 @@ class Projection(nn.Module):
         return self.conv(x)
     
     def forward_time_series(self, x):
-        B, T = x.shape[:2]
+        B, T = x.shape[:2] # 
         return self.conv(x.flatten(0, 1)).unflatten(0, (B, T))
         
     def forward(self, x):
-        if x.ndim == 5:
+        if x.ndim == 5: # maybe [b,t,c,h,w]
             return self.forward_time_series(x)
         else:
             return self.forward_single_frame(x)

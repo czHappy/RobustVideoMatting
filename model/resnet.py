@@ -34,8 +34,8 @@ class ResNet50Encoder(ResNet):
     
     def forward_time_series(self, x):
         B, T = x.shape[:2]
-        features = self.forward_single_frame(x.flatten(0, 1))
-        features = [f.unflatten(0, (B, T)) for f in features]
+        features = self.forward_single_frame(x.flatten(0, 1)) # [B*T, C, W, H]
+        features = [f.unflatten(0, (B, T)) for f in features] # f1 f2 f3 f4每一个特征都需要unflatten
         return features
     
     def forward(self, x):

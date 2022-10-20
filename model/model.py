@@ -46,22 +46,22 @@ class MattingNetwork(nn.Module):
                 downsample_ratio: float = 1,
                 segmentation_pass: bool = False):
         
-        if downsample_ratio != 1:
+        if downsample_ratio != 1: # 如果下采样率不为1就需要下采样
             src_sm = self._interpolate(src, scale_factor=downsample_ratio)
         else:
             src_sm = src
         
-        f1, f2, f3, f4 = self.backbone(src_sm)
-        f4 = self.aspp(f4)
-        hid, *rec = self.decoder(src_sm, f1, f2, f3, f4, r1, r2, r3, r4)
+        f1, f2, f3, f4 = self.backbone(src_sm) # backbone产生4个输出 2x 4x 8x 16x
+        f4 = self.aspp(f4) # f4进aspp模块
+        hid, *rec = self.decoder(src_sm, f1, f2, f3, f4, r1, r2, r3, r4) # 循环decoder输出hidden 和r1, r2, r3, r4的更新
         
         if not segmentation_pass:
-            fgr_residual, pha = self.project_mat(hid).split([3, 1], dim=-3)
+            fgr_residual, pha = self.project_mat(hid).split([3, 1], dim=-3) # 结果是4通道，拆成3+1 最后一个通道是alpha
             if downsample_ratio != 1:
                 fgr_residual, pha = self.refiner(src, src_sm, fgr_residual, pha, hid)
             fgr = fgr_residual + src
             fgr = fgr.clamp(0., 1.)
-            pha = pha.clamp(0., 1.)
+            pha = pha.clamp(0., 1.) # 限制在[0,1]
             return [fgr, pha, *rec]
         else:
             seg = self.project_seg(hid)

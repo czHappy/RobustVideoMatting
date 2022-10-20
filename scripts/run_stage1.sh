@@ -1,0 +1,13 @@
+python train.py \
+    --model-variant mobilenetv3 \
+    --dataset videomatte \
+    --resolution-lr 512 \
+    --seq-length-lr 15 \
+    --learning-rate-backbone 0.0001 \
+    --learning-rate-aspp 0.0002 \
+    --learning-rate-decoder 0.0002 \
+    --learning-rate-refiner 0 \
+    --checkpoint-dir checkpoint/stage1 \
+    --log-dir log/stage1 \
+    --epoch-start 0 \
+    --epoch-end 20

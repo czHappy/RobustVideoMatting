@@ -93,7 +93,7 @@ from torch.utils.tensorboard import SummaryWriter
 from torchvision.utils import make_grid
 from torchvision.transforms.functional import center_crop
 from tqdm import tqdm
-
+os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
 from dataset.videomatte import (
     VideoMatteDataset,
     VideoMatteTrainAugmentation,
@@ -272,11 +272,11 @@ class Trainer:
         # Segementation datasets
         self.log('Initializing image segmentation datasets')
         self.dataset_seg_image = ConcatDataset([
-            CocoPanopticDataset(
-                imgdir=DATA_PATHS['coco_panoptic']['imgdir'],
-                anndir=DATA_PATHS['coco_panoptic']['anndir'],
-                annfile=DATA_PATHS['coco_panoptic']['annfile'],
-                transform=CocoPanopticTrainAugmentation(size_lr)),
+            # CocoPanopticDataset(
+            #     imgdir=DATA_PATHS['coco_panoptic']['imgdir'],
+            #     anndir=DATA_PATHS['coco_panoptic']['anndir'],
+            #     annfile=DATA_PATHS['coco_panoptic']['annfile'],
+            #     transform=CocoPanopticTrainAugmentation(size_lr)),
             SuperviselyPersonDataset(
                 imgdir=DATA_PATHS['spd']['imgdir'],
                 segdir=DATA_PATHS['spd']['segdir'],
